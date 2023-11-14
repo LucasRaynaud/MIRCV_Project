@@ -1,6 +1,31 @@
-import unicodedata
 import re
+import string
 import tarfile
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+
+def preprocess_text(text):
+    """
+    Preprocesses the input text by removing stopwords and applying stemming.
+
+    Args:
+    text (str): The input text to preprocess.
+
+    Returns:
+    str: The preprocessed text.
+    """
+    stemmer = PorterStemmer()
+    stop_words = set(stopwords.words('english'))
+
+    # Remove punctuation
+    text = text.translate(str.maketrans('', '', string.punctuation))
+
+    words = text.split()
+    processed_words = [stemmer.stem(word) for word in words if word.lower() not in stop_words]
+
+    processed_text = ' '.join(processed_words)
+    return processed_text
+
 
 def read_data_from_tar_gz(file_path):
     """
