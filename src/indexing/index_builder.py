@@ -1,4 +1,6 @@
-def parse_documents(documents):
+import tarfile
+
+def parse_documents(tar_path):
     """
     Parses documents to extract document IDs and contents.
 
@@ -8,12 +10,18 @@ def parse_documents(documents):
     Returns:
     dict: A dictionary with document IDs as keys and document contents as values.
     """
-    parsed_documents = {}
-    for doc in documents:
-        if '\t' in doc:  # Assuming the format is 'doc_id\tcontent'
-            doc_id, content = doc.split('\t', 1)
-            parsed_documents[doc_id] = content
-    return parsed_documents
+    documents = {}
+    with tarfile.open(tar_path, "r:gz") as tar:
+        tsv_file = tar.extractfile('collection.tsv')
+        if tsv_file:
+            content = tsv_file.read().decode('utf-8')
+            lines = content.split('\n')
+            for line in lines:
+                if '\t' in line:
+                    doc_id, doc_content = line.split('\t', 1)
+                    documents[doc_id] = doc_content
+    return documents
+
 
 def create_lexicon(parsed_documents):
     """
@@ -51,29 +59,21 @@ def create_postings_lists(parsed_documents, lexicon):
     return postings_lists
 
 def sort_and_merge_postings(postings_lists):
-    """
-    Sort, merge, and apply gap compression to postings lists.
-
-    Args:
-    postings_lists (dict): Postings lists with term IDs as keys and dictionaries of document IDs and frequencies as values.
-
-    Returns:
-    dict: Gap-compressed, sorted, and merged postings lists.
-    """
     for term_id, postings in postings_lists.items():
-        # Sort postings by document ID
-        sorted_postings = dict(sorted(postings.items()))
+        # Ensure doc_ids are integers and sort postings by document ID
+        sorted_postings = dict(sorted(((int(doc_id), freq) for doc_id, freq in postings.items()), key=lambda x: x[0]))
 
         # Apply gap compression
         last_doc_id = 0
         compressed_postings = {}
         for doc_id, freq in sorted_postings.items():
-            gap = int(doc_id) - last_doc_id
+            gap = doc_id - last_doc_id
             compressed_postings[gap] = freq
-            last_doc_id = int(doc_id)
+            last_doc_id = doc_id
 
         postings_lists[term_id] = compressed_postings
     return postings_lists
+
 
 
 def finalize_index(sorted_postings_lists):
