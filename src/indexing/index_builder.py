@@ -58,23 +58,51 @@ def create_postings_lists(parsed_documents, lexicon):
             postings_lists[term_id][doc_id] += 1
     return postings_lists
 
+def variable_byte_encode(number):
+    """Encodes a number using variable byte encoding.
+
+    Args:
+    number (int): The number to encode.
+
+    Returns:
+    list: A list of integers, each representing an encoded byte.
+    """
+    if number == 0:
+        return [0]
+
+    bytes_list = []
+    while number > 0:
+        # Extract the last 7 bits
+        byte = number & 0b01111111
+        # Shift to prepare for the next iteration
+        number >>= 7
+        # Add to the list
+        bytes_list.append(byte)
+    
+    # Reverse the list and add the continuation bits
+    bytes_list = bytes_list[::-1]
+    for i in range(len(bytes_list)):
+        # Add continuation bit (1 for all but the last byte)
+        bytes_list[i] |= 0b10000000 if i < len(bytes_list) - 1 else 0
+
+    return bytes_list
+
+
 def sort_and_merge_postings(postings_lists):
+    """ Apply gap compression with variable-byte encoding. """
     for term_id, postings in postings_lists.items():
-        # Ensure doc_ids are integers and sort postings by document ID
-        sorted_postings = dict(sorted(((int(doc_id), freq) for doc_id, freq in postings.items()), key=lambda x: x[0]))
-
-        # Apply gap compression
+        postings = {int(doc_id): freq for doc_id, freq in postings.items()}
+        sorted_postings = dict(sorted(postings.items()))
         last_doc_id = 0
-        compressed_postings = {}
+        final_postings = []
         for doc_id, freq in sorted_postings.items():
+            print(doc_id)
+            print(freq)
             gap = doc_id - last_doc_id
-            compressed_postings[gap] = freq
+            final_postings[gap] = freq
             last_doc_id = doc_id
-
-        postings_lists[term_id] = compressed_postings
+        postings_lists[term_id] = final_postings
     return postings_lists
-
-
 
 def finalize_index(sorted_postings_lists):
     """
