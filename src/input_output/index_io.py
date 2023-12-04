@@ -1,6 +1,3 @@
-from indexing.index_builder import variable_byte_encode
-
-
 def save_lexicon(lexicon, filename):
     """
     Saves the lexicon to a text file.
@@ -42,7 +39,7 @@ def save_inverted_index(inverted_index, filename):
             file.write(bytes(postings_length_encoded))
 
             # Write the encoded postings list
-            file.write(bytes(encoded_postings))
+            file.write(bytes(encoded_postings[term_id]))
 
 def variable_byte_decode(encoded_bytes):
     """Decodes a sequence of bytes using variable byte encoding.
@@ -63,6 +60,23 @@ def variable_byte_decode(encoded_bytes):
             decoded_numbers.append(current_number)
             current_number = 0  # Reset for the next number
     return decoded_numbers
+
+def variable_byte_encode(number):
+    """Encodes a number using variable byte encoding."""
+    if number == 0:
+        return [0]
+
+    bytes_list = []
+    while number > 0:
+        bytes_list.insert(0, number % 128)
+        number >>= 7
+
+    # Set the most significant bit to 1 for all but the last byte
+    for i in range(len(bytes_list) - 1):
+        bytes_list[i] |= 0x80
+    bytes_list[-1] |= 0x00  # Ensure the last byte is in the range 0-127
+
+    return bytes_list
 
 def load_inverted_index_binary(filename):
     """
@@ -87,7 +101,7 @@ def load_inverted_index_binary(filename):
                 term_id_bytes.append(byte_val)
                 if byte_val < 128:
                     break
-            term_id = variable_byte_decode(term_id_bytes)
+            term_id = variable_byte_decode(term_id_bytes)[0]
 
             # Read and decode the length of postings list
             length_bytes = []
@@ -100,7 +114,6 @@ def load_inverted_index_binary(filename):
 
             # Read and decode the postings list
             encoded_postings = []
-            print(postings_length)
             for _ in range(len(postings_length)):
                 postings_byte = file.read(1)
                 if not postings_byte:
