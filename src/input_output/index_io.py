@@ -91,48 +91,50 @@ def load_inverted_index_binary(filename):
     inverted_index = {}
     with open(filename, 'rb') as file:
         while True:
-            # Read and decode the term ID
-            term_id_bytes = []
+            term_id_byte = file.read(1)
+            if not term_id_byte:
+                break  # End of file reached
+            term_id = ord(term_id_byte)
+
+            postings_dict = {}
+            last_doc_id = 0
             while True:
-                byte = file.read(1)
-                if not byte:
-                    return inverted_index  # End of file reached
-                byte_val = ord(byte)
-                term_id_bytes.append(byte_val)
-                if byte_val < 128:
+                # Read the gap
+                gap_bytes = []
+                while True:
+                    byte = file.read(1)
+                    if not byte:
+                        break  # End of file or no more postings
+                    byte_val = ord(byte)
+                    gap_bytes.append(byte_val)
+                    if byte_val < 128:
+                        break
+
+                if not byte:  # Check if end of file was reached
                     break
-            term_id = variable_byte_decode(term_id_bytes)[0]
+                gap = variable_byte_decode(gap_bytes)[0] if gap_bytes else 0
 
-            # Read and decode the length of postings list
-            length_bytes = []
-            for _ in range(4):  # Assuming length is encoded in 4 bytes
-                byte = file.read(1)
-                if not byte:
-                    return inverted_index  # End of file or error
-                length_bytes.append(ord(byte))
-            postings_length = variable_byte_decode(length_bytes)
+                # Read the frequency
+                freq_bytes = []
+                while True:
+                    byte = file.read(1)
+                    if not byte:
+                        break  # End of file or no more postings
+                    byte_val = ord(byte)
+                    freq_bytes.append(byte_val)
+                    if byte_val < 128:
+                        break
 
-            # Read and decode the postings list
-            encoded_postings = []
-            for _ in range(len(postings_length)):
-                postings_byte = file.read(1)
-                if not postings_byte:
-                    break  # End of file or error
-                encoded_postings.append(ord(postings_byte))
+                if not freq_bytes:
+                    continue  # No frequency bytes, skip this posting
 
-            # Decode postings list
-            decoded_postings = []
-            postings_bytes_iter = iter(encoded_postings)
-            for byte in postings_bytes_iter:
-                number_bytes = [byte]
-                while byte & 0x80:  # While the continuation bit is set
-                    byte = next(postings_bytes_iter, None)
-                    if byte is None:
-                        break  # End of file or error
-                    number_bytes.append(byte)
-                decoded_number = variable_byte_decode(number_bytes)
-                decoded_postings.append(decoded_number)
+                freq = variable_byte_decode(freq_bytes)[0]
 
-            inverted_index[term_id] = decoded_postings
+                # Calculate document ID from gap and update postings
+                doc_id = last_doc_id + gap
+                postings_dict[str(doc_id)] = freq
+                last_doc_id = doc_id
+
+            inverted_index[term_id] = postings_dict
 
     return inverted_index

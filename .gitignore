@@ -1,5 +1,8 @@
-data/msmarco/*.tar.gz
-
+*.tar.gz
+*.txt
+*.bin
+*.zip
+*.tsv
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

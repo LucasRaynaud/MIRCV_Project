@@ -3,7 +3,7 @@ import os
 current_dir = os.path.dirname(os.path.realpath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
-from data_preprocessing.data_preprocessing import preprocess_text
+from data_preprocessing.data_preprocessing import preprocess_tokenize
 
 import math
 
@@ -103,8 +103,7 @@ def process_query(query, inverted_index, lexicon, total_docs, ranking='tfidf', q
     Returns:
     list: A list of tuples (doc_id, score) ordered by score.
     """
-    processed_query = preprocess_text(query)
-    query_terms = processed_query.split()
+    query_terms = preprocess_tokenize(query)
 
     # Select relevant documents based on query type
     if query_type == 'AND':
