@@ -1,3 +1,32 @@
+def save_document_index(document_index,filename):
+    """
+    Saves the document index to a text file.
+
+    Args:
+    document_index (dict): A dictionary mapping document id to the length of the document
+    filename (str): The filename to save the document_index.
+    """
+    with open(filename, 'w') as file:
+        for docid, doclen in document_index.items():
+            file.write(f"{docid}\t{doclen}\n")
+
+def load_document_index(filename):
+    """
+    Loads the docmuent_index from a text file.
+
+    Args:
+    filename (str): The filename of the document_index file.
+
+    Returns:
+    dict: A dictionary mapping docid to doc length.
+    """
+    document_index = {}
+    with open(filename, 'r',encoding="utf-8") as file:
+        for line in file:
+            docid, doc_len = line.strip().split('\t')
+            document_index[docid] = int(doc_len)
+    return document_index
+
 def save_lexicon(lexicon, filename):
     """
     Saves the lexicon to a text file.

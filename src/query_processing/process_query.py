@@ -1,8 +1,4 @@
 import sys
-import os
-current_dir = os.path.dirname(os.path.realpath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir)
 from data_preprocessing.data_preprocessing import preprocess_tokenize
 
 import math
@@ -29,7 +25,7 @@ def tfidf(inverted_index, doc_id, term_id, total_docs):
 
     return tf * idf
 
-def bm25(inverted_index, doc_id, term_id, total_docs, avgdl,k1=1.5, b=0.75):
+def bm25(inverted_index,document_index, doc_id, term_id, total_docs, avgdl,k1=1.5, b=0.75):
     """
     Calculate the BM25 score for a term in a specific document.
 
@@ -53,42 +49,13 @@ def bm25(inverted_index, doc_id, term_id, total_docs, avgdl,k1=1.5, b=0.75):
     tf = inverted_index[term_id].get(doc_id, 0)
 
     # Calculate the document length
-    doc_length = sum(inverted_index[term].get(doc_id, 0) for term in inverted_index)
+    doc_length = document_index[doc_id]
 
     # Calculate BM25
     score = idf * ((tf * (k1 + 1)) / (tf + k1 * (1 - b + b * (doc_length / avgdl))))
     return score
 
-
-def average_document_length(inverted_index):
-    total_length = 0
-    doc_count = 0
-    for term_id in inverted_index:
-        postings = inverted_index[term_id]
-        total_length += sum(postings.values())
-        doc_count += len(postings)
-    return total_length / doc_count if doc_count > 0 else 0
-
-def compute_scores(query_terms, inverted_index, lexicon, total_docs, ranking_func):
-    scores = {}
-    avgdl = average_document_length(inverted_index) if ranking_func == bm25 else 0
-
-    for term in query_terms:
-        term_id = lexicon.get(term)
-        if term_id is not None and term_id in inverted_index:
-            postings = inverted_index[term_id]
-            for doc_id in postings:
-                if doc_id not in scores:
-                    scores[doc_id] = 0
-                if ranking_func == tfidf:
-                    score = ranking_func(inverted_index, doc_id, term_id, total_docs)
-                elif ranking_func == bm25:
-                    score = ranking_func(inverted_index, doc_id, term_id, total_docs, avgdl=avgdl)
-                scores[doc_id] += score
-
-    return scores
-
-def process_query(query, inverted_index, lexicon, total_docs, ranking='tfidf', query_type='AND'):
+def process_query(query, inverted_index, lexicon,document_index, total_docs, ranking='tfidf', query_type='OR'):
     """
     Process the query, compute ranking scores and return relevant documents ordered by relevance.
 
@@ -103,7 +70,20 @@ def process_query(query, inverted_index, lexicon, total_docs, ranking='tfidf', q
     Returns:
     list: A list of tuples (doc_id, score) ordered by score.
     """
-    query_terms = preprocess_tokenize(query)
+
+    import re
+    import string
+    from nltk.corpus import stopwords
+    from nltk.stem import PorterStemmer
+    from spellchecker import SpellChecker
+
+    stemmer = PorterStemmer()
+    stop_words = set(stopwords.words('english'))
+    compiled_re = re.compile(r'[^a-z0-9\\s]')
+    punctuation_translator = str.maketrans('', '', string.punctuation)
+    spell = SpellChecker()
+
+    query_terms = preprocess_tokenize(query,compiled_re,stemmer,stop_words,punctuation_translator,spell)
 
     # Select relevant documents based on query type
     if query_type == 'AND':
@@ -114,7 +94,7 @@ def process_query(query, inverted_index, lexicon, total_docs, ranking='tfidf', q
     # Compute scores only for relevant documents
     ranking_func = bm25 if ranking == 'bm25' else tfidf
     scores = {}
-    avgdl = average_document_length(inverted_index) if ranking_func == bm25 else 0
+    avgdl = sum(document_index.values())/total_docs if ranking_func == bm25 else 0
 
     for doc_id in relevant_docs:
         scores[doc_id] = 0
@@ -124,7 +104,7 @@ def process_query(query, inverted_index, lexicon, total_docs, ranking='tfidf', q
                 if ranking_func == tfidf:
                     score = ranking_func(inverted_index, doc_id, term_id, total_docs)
                 elif ranking_func == bm25:
-                    score = ranking_func(inverted_index, doc_id, term_id, total_docs, avgdl=avgdl)
+                    score = ranking_func(inverted_index,document_index, doc_id, term_id, total_docs, avgdl=avgdl)
                 scores[doc_id] += score
 
     # Sort documents by their scores in descending order
