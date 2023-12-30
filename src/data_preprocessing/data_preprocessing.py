@@ -1,7 +1,7 @@
 import re
 import string
 
-def preprocess_text(text,stemmer,stop_words,punctuation_translator):
+def preprocess_text(text,stemmer,stop_words,punctuation_translator,spell):
     """
     Preprocesses the input text by removing stopwords and applying stemming.
 
@@ -12,9 +12,9 @@ def preprocess_text(text,stemmer,stop_words,punctuation_translator):
     dict(str): The preprocessed text.
     """
     # Remove punctuation
-    words = {word.translate(punctuation_translator) for word in text}
+    words = (word.translate(punctuation_translator) for word in text if word not in stop_words and spell.known([word]))
 
-    processed_words = [stemmer.stem(word) for word in words if word not in stop_words]
+    processed_words = [stemmer.stem(word) for word in words]
 
     return processed_words
     
@@ -28,7 +28,7 @@ def normalize_text(text,compiled_re):
     Returns:
     dict(str): The normalized text.
     """
-    return {compiled_re.sub('', word.lower()) for word in text}
+    return (compiled_re.sub('', word.lower()) for word in text)
 
 def tokenize(text):
     """
@@ -42,7 +42,7 @@ def tokenize(text):
     """
     return text.split()
 
-def preprocess_tokenize(document,compiled_re,stemmer,stop_words,punctuation_translator):
-    tokenized_document = tokenize(document)
-    normalized_text = normalize_text(tokenized_document,compiled_re)
-    return preprocess_text(normalized_text,stemmer,stop_words,punctuation_translator)
+def preprocess_tokenize(document,compiled_re,stemmer,stop_words,punctuation_translator,spell):
+    return preprocess_text(
+        normalize_text(tokenize(document), compiled_re),
+        stemmer, stop_words, punctuation_translator,spell)
