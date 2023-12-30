@@ -1,25 +1,11 @@
 def save_document_index(document_index,filename):
-    """
-    Saves the document index to a text file.
-
-    Args:
-    document_index (dict): A dictionary mapping document id to the length of the document
-    filename (str): The filename to save the document_index.
-    """
+    """    Saves the document index to a text file.    """
     with open(filename, 'w') as file:
         for docid, doclen in document_index.items():
             file.write(f"{docid}\t{doclen}\n")
 
 def load_document_index(filename):
-    """
-    Loads the docmuent_index from a text file.
-
-    Args:
-    filename (str): The filename of the document_index file.
-
-    Returns:
-    dict: A dictionary mapping docid to doc length.
-    """
+    """    Loads the docmuent_index from a text file.    """
     document_index = {}
     with open(filename, 'r',encoding="utf-8") as file:
         for line in file:
@@ -28,27 +14,13 @@ def load_document_index(filename):
     return document_index
 
 def save_lexicon(lexicon, filename):
-    """
-    Saves the lexicon to a text file.
-
-    Args:
-    lexicon (dict): A dictionary mapping terms to unique IDs.
-    filename (str): The filename to save the lexicon.
-    """
+    """    Saves the lexicon to a text file.    """
     with open(filename, 'w') as file:
         for term, term_id in lexicon.items():
             file.write(f"{term}\t{term_id}\n")
 
 def load_lexicon(filename):
-    """
-    Loads the lexicon from a text file.
-
-    Args:
-    filename (str): The filename of the lexicon file.
-
-    Returns:
-    dict: A dictionary mapping terms to unique IDs.
-    """
+    """    Loads the lexicon from a text file.    """
     lexicon = {}
     with open(filename, 'r',encoding="utf-8") as file:
         for line in file:
@@ -57,6 +29,7 @@ def load_lexicon(filename):
     return lexicon
 
 def save_inverted_index(inverted_index, filename):
+    """ Save the inverted index to a bin file"""
     with open(filename, 'wb') as file:
         for term_id, encoded_postings in inverted_index.items():
             # Apply variable byte encoding to the term ID
@@ -70,14 +43,7 @@ def save_inverted_index(inverted_index, filename):
             file.write(bytes(encoded_postings))
 
 def variable_byte_decode(encoded_bytes):
-    """Decodes a sequence of bytes using variable byte encoding.
-
-    Args:
-    encoded_bytes (list of int): The encoded bytes.
-
-    Returns:
-    list of int: The decoded integers.
-    """
+    """ Decodes a sequence of bytes using variable byte encoding.    """
     decoded_numbers = []
     current_number = 0
     for byte in encoded_bytes:
@@ -141,7 +107,7 @@ def load_inverted_index_binary(filename):
             # Read the posting list bytes based on the obtained length
             postings_bytes = file.read(postings_length)
 
-            # Decode the posting list (considering document IDs are stored as gaps)
+            # Decode the posting list
             decoded_postings = variable_byte_decode(postings_bytes)
             postings_dict = {}
             last_doc_id = 0

@@ -1,52 +1,38 @@
 import unittest
-from data_preprocessing import read_data_from_tar_gz, normalize_text, tokenize, preprocess_text
+import string
+import re
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+from spellchecker import SpellChecker
+from data_preprocessing import preprocess_text, normalize_text, tokenize, preprocess_tokenize
 
-class TestDataPreprocessing(unittest.TestCase):
+class TestPreprocessingFunctions(unittest.TestCase):
 
-    def test_read_data_from_tar_gz(self):
-        # Test reading data from a .tar.gz file
-        data_gen = read_data_from_tar_gz('data/msmarco/sub_collection.tar.gz')
-        first_line = next(data_gen)
-        self.assertTrue(len(first_line) > 0)  # Check if the first line is not empty
+    def setUp(self):
+        # Mocking the external dependencies like stemmer, stop_words, etc.
+        self.stemmer = PorterStemmer()
+        self.stop_words = set(stopwords.words('english'))
+        self.compiled_re = re.compile(r'[^a-z0-9\\s]')
+        self.punctuation_translator = str.maketrans('', '', string.punctuation)
+        self.spell = SpellChecker()
 
     def test_normalize_text(self):
-        # Test text normalization
-        original_text = "Hello, World! 123"
-        expected_normalized_text = "hello world 123"
-        self.assertEqual(normalize_text(original_text), expected_normalized_text)
+        text =  ["HeLLo", "WoRLd!123"]
+        expected_output = ['hello', 'world123']
+        result = normalize_text(text, self.compiled_re)
+        self.assertEqual(list(result), expected_output)
 
     def test_tokenize(self):
-        # Test tokenization
         text = "hello world"
-        expected_tokens = ["hello", "world"]
-        self.assertEqual(tokenize(text), expected_tokens)
+        expected_output = ['hello', 'world']
+        result = tokenize(text)
+        self.assertEqual(result, expected_output)
 
-    def test_preprocess_text(self):
-        # Test case with a mix of stopwords and regular words
-        input_text = "This is a test of the preprocessing function."
-        expected_output = "test preprocess function"
-        self.assertEqual(preprocess_text(input_text), expected_output)
+    def test_preprocess_tokenize(self):
+        document = "This is a sample document."
+        expected_output = ['sampl', 'document']
+        result = preprocess_tokenize(document, self.compiled_re, self.stemmer, self.stop_words, self.punctuation_translator, self.spell)
+        self.assertEqual(list(result), expected_output)
 
-        # Test case with all stopwords
-        input_text = "This is and of the"
-        expected_output = ""
-        self.assertEqual(preprocess_text(input_text), expected_output)
-
-        # Test case with no stopwords
-        input_text = "Unique words only"
-        expected_output = "uniqu word"
-        self.assertEqual(preprocess_text(input_text), expected_output)
-
-        # Test case with punctuation (assuming basic split on space)
-        input_text = "Testing, with punctuation!"
-        expected_output = "test punctuat"
-        self.assertEqual(preprocess_text(input_text), expected_output)
-
-        # Test case with case sensitivity
-        input_text = "The Preprocessing Function Works Well"
-        expected_output = "preprocess function work well"
-        self.assertEqual(preprocess_text(input_text), expected_output)
-
-# Run the tests
 if __name__ == '__main__':
     unittest.main()

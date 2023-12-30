@@ -4,18 +4,7 @@ from data_preprocessing.data_preprocessing import preprocess_tokenize
 import math
 
 def tfidf(inverted_index, doc_id, term_id, total_docs):
-    """
-    Calculate the TF-IDF score for a term in a specific document.
-
-    Args:
-    inverted_index (dict): The inverted index.
-    doc_id (int): The document ID.
-    term_id (int): The term ID.
-    total_docs (int): The total number of documents in the corpus.
-
-    Returns:
-    float: The TF-IDF score.
-    """
+    """    Calculate the TF-IDF score for a term in a specific document."""
     # Calculate TF (Term Frequency)
     tf = inverted_index[term_id].get(doc_id, 0)
 
@@ -26,22 +15,8 @@ def tfidf(inverted_index, doc_id, term_id, total_docs):
     return tf * idf
 
 def bm25(inverted_index,document_index, doc_id, term_id, total_docs, avgdl,k1=1.5, b=0.75):
-    """
-    Calculate the BM25 score for a term in a specific document.
-
-    Args:
-    inverted_index (dict): The inverted index.
-    doc_id (int): The document ID.
-    term_id (int): The term ID.
-    total_docs (int): The total number of documents in the corpus.
-    avgdl (float): The average document length across the corpus.
-    k1 (float): The BM25 parameter.
-    b (float): The BM25 parameter.
-
-    Returns:
-    float: The BM25 score.
-    """
-    # Calculate IDF (Inverse Document Frequency)
+    """    Calculate the BM25 score for a term in a specific document.    """
+    # Calculate IDF
     doc_freq = len(inverted_index[term_id])
     idf = math.log((total_docs - doc_freq + 0.5) / (doc_freq + 0.5) + 1)
 
@@ -56,20 +31,7 @@ def bm25(inverted_index,document_index, doc_id, term_id, total_docs, avgdl,k1=1.
     return score
 
 def process_query(query, inverted_index, lexicon,document_index, total_docs, ranking='tfidf', query_type='OR'):
-    """
-    Process the query, compute ranking scores and return relevant documents ordered by relevance.
-
-    Args:
-    query (str): The user's query.
-    inverted_index (dict): The inverted index.
-    lexicon (dict): The lexicon mapping terms to term IDs.
-    total_docs (int): The total number of documents in the corpus.
-    ranking (str): The ranking method ('tfidf' or 'bm25').
-    query_type (str): The type of query ('AND' or 'OR').
-
-    Returns:
-    list: A list of tuples (doc_id, score) ordered by score.
-    """
+    """    Process the query, compute ranking scores and return relevant documents ordered by relevance.    """
 
     import re
     import string
@@ -124,6 +86,7 @@ def conjunctive_query(preprocessed_query, inverted_index, lexicon):
 def disjunctive_query(preprocessed_query, inverted_index, lexicon):
     all_documents = set()
 
+    # Add all documents where a term is present
     for term in preprocessed_query:
         if term in lexicon:
             all_documents.update(inverted_index[lexicon[term]])
