@@ -1,5 +1,5 @@
 *.tar.gz
-*.txt
+data/*
 *.bin
 *.zip
 *.tsv
